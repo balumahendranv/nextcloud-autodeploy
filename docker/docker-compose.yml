@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  db:
+    image: mariadb
+    restart: always
+    env_file: .env
+    volumes:
+      - db_data:/var/lib/mysql
+
+  app:
+    image: nextcloud
+    restart: always
+    depends_on:
+      - db
+    env_file: .env
+    environment:
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_HOST=db
+    volumes:
+      - nextcloud:/var/www/html
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${NEXTCLOUD_DOMAIN}.rule=Host(`${NEXTCLOUD_DOMAIN}`)"
+      - "traefik.http.routers.${NEXTCLOUD_DOMAIN}.entrypoints=websecure"
+      - "traefik.http.routers.${NEXTCLOUD_DOMAIN}.tls.certresolver=myresolver"
+
+volumes:
+  db_data:
+  nextcloud:
