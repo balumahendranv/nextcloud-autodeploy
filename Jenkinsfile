@@ -1,28 +1,56 @@
 pipeline {
     agent any
-    parameters {
-        string(name: 'DEPLOYMENT_MODE', defaultValue: 'docker', choices: ['docker', 'k8s'], description: 'Choose deployment type')
-        string(name: 'SUBDOMAIN', defaultValue: 'cloud1', description: 'Subdomain for Nextcloud (e.g., cloud1)')
-    }
+
     environment {
-        DOMAIN = "${params.SUBDOMAIN}.rootedinfra.site"
+        COMPOSE_PROJECT_NAME = "nextcloud"
     }
+
     stages {
         stage('Clone Repo') {
             steps {
-                git url: 'https://your.git.repo/nextcloud-autodeploy.git'
+                git 'https://github.com/balumahendranv/nextcloud-autodeploy.git'
             }
         }
-        stage('Deploy') {
+
+        stage('Setup Env File') {
             steps {
-                script {
-                    if (params.DEPLOYMENT_MODE == 'docker') {
-                        sh "./deploy.sh docker $DOMAIN"
-                    } else {
-                        sh "./deploy.sh k8s $DOMAIN"
-                    }
-                }
+                writeFile file: '.env', text: '''
+NEXTCLOUD_ADMIN_USER=admin
+NEXTCLOUD_ADMIN_PASSWORD=admin123
+MYSQL_ROOT_PASSWORD=rootpass
+MYSQL_PASSWORD=nextcloudpass
+MYSQL_DATABASE=nextcloud
+MYSQL_USER=nextcloud
+NEXTCLOUD_DOMAIN=nextcloud.rootedinfra.site
+'''
             }
+        }
+
+        stage('Pull Latest Images') {
+            steps {
+                sh 'docker compose pull'
+            }
+        }
+
+        stage('Shut Down Previous Stack') {
+            steps {
+                sh 'docker compose down'
+            }
+        }
+
+        stage('Start New Stack') {
+            steps {
+                sh 'docker compose up -d'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Nextcloud is deployed at https://nextcloud.rootedinfra.site"
+        }
+        failure {
+            echo "❌ Deployment failed. Check Jenkins logs."
         }
     }
 }
