@@ -14,7 +14,7 @@ pipeline {
 
         stage('Setup Env File') {
             steps {
-                writeFile file: '.env', text: '''
+                writeFile file: 'docker/.env', text: '''
 NEXTCLOUD_ADMIN_USER=admin
 NEXTCLOUD_ADMIN_PASSWORD=admin123
 MYSQL_ROOT_PASSWORD=rootpass
@@ -28,19 +28,25 @@ NEXTCLOUD_DOMAIN=nextcloud.rootedinfra.site
 
         stage('Pull Latest Images') {
             steps {
-                sh 'docker compose pull'
+                dir('docker') {
+                    sh 'docker compose pull'
+                }
             }
         }
 
         stage('Shut Down Previous Stack') {
             steps {
-                sh 'docker compose down'
+                dir('docker') {
+                    sh 'docker compose down'
+                }
             }
         }
 
         stage('Start New Stack') {
             steps {
-                sh 'docker compose up -d'
+                dir('docker') {
+                    sh 'docker compose up -d'
+                }
             }
         }
     }
