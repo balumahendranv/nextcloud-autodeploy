@@ -13,6 +13,8 @@ services:
   app:
     image: nextcloud
     restart: always
+    ports:
+      - "8082:80"
     depends_on:
       - db
     env_file: .env
